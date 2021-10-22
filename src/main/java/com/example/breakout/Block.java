@@ -10,15 +10,14 @@ public class Block {
     public static final int HEIGHT = 16;
 
     // 位置（左上隅の座標）
-    private int x, y;
+    private Coordinates coordinates;
 
     // ボールが当たって消されたか
     private boolean isDeleted;
 
     public Block(int x, int y) {
-        this.x = x;
-        this.y = y;
-        isDeleted = false;
+        this.coordinates = new Coordinates(x, y);
+        this.isDeleted = false;
     }
 
     /**
@@ -28,22 +27,16 @@ public class Block {
      */
     public void draw(Graphics g) {
         g.setColor(Color.CYAN);
-        g.fillRect(x, y, WIDTH, HEIGHT);
+        g.fillRect(coordinates.getX(), coordinates.getY(), WIDTH, HEIGHT);
 
         // 枠線を描画
         g.setColor(Color.BLACK);
-        g.drawRect(x, y, WIDTH, HEIGHT);
+        g.drawRect(coordinates.getX(), coordinates.getY(), WIDTH, HEIGHT);
     }
 
     public boolean isCollide(Ball ball) {
-        Rectangle blockRect = new Rectangle(x, y, WIDTH, HEIGHT);
-        if (blockRect.contains(ball.getPos(Corner.TOP_LEFT)) ||
-                blockRect.contains(ball.getPos(Corner.TOP_RIGHT)) ||
-                blockRect.contains(ball.getPos(Corner.BOTTOM_LEFT))||
-                blockRect.contains(ball.getPos(Corner.BOTTOM_RIGHT))) {
-            return true;
-        }
-        return false;
+        Rectangle blockRect = new Rectangle(coordinates.getX(), coordinates.getY(), WIDTH, HEIGHT);
+        return blockRect.intersects(ball.getRectangle());
     }
 
     /**
@@ -52,8 +45,8 @@ public class Block {
      * @param ball ボール
      * @return 衝突位置
      */
-    public Direction collideWith(Ball ball) {
-        Rectangle blockRect = new Rectangle(x, y, WIDTH, HEIGHT);
+    public Direction getDirectionToCollide(Ball ball) {
+        Rectangle blockRect = new Rectangle(coordinates.getX(), coordinates.getY(), WIDTH, HEIGHT);
 
         if (blockRect.contains(ball.getPos(Corner.TOP_LEFT))
                 && blockRect.contains(ball.getPos(Corner.TOP_RIGHT))) {
@@ -88,14 +81,7 @@ public class Block {
         return Direction.NONE;
     }
 
-    /**
-     * ブロックを消去
-     *
-     */
     public void delete() {
-        // TODO: ここでブロックが壊れる効果音
-        // TODO: ここで派手なアクション
-
         isDeleted = true;
     }
 

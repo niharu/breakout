@@ -1,120 +1,81 @@
 package com.example.breakout;
 
-import java.awt.Color;
+import lombok.SneakyThrows;
+
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.JPanel;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
  * Created by ryo on 2018/08/25.
  */
 public class MainPanel extends JPanel implements Runnable, MouseMotionListener {
-    public static final int WIDTH = 360;
-    public static final int HEIGHT = 480;
+    private static final int WIDTH = 360;
+    private static final int HEIGHT = 480;
 
-    private static final int NUM_BLOCK_ROW = 10;
-    private static final int NUM_BLOCK_COL = 7;
-
-    private Racket racket;
-    private Ball ball;
-    private List<Block> blocks;
-
-    // TODO privateフィールドに置き換え可能?
-    private Thread gameloop;
+    private final Racket racket;
+    private final Ball ball;
+    private final Blocks blocks;
+    private final Background background;
 
     public MainPanel() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         addMouseMotionListener(this);
-        racket = new Racket();
+
+        racket = new Racket(WIDTH / 2 - Racket.WIDTH/2, HEIGHT - Racket.HEIGHT);
         ball = new Ball();
-        blocks = new ArrayList<>();
+        blocks = new Blocks();
+        background = new Background(WIDTH, HEIGHT);
 
-        for (int i = 0; i < NUM_BLOCK_ROW; i++) {
-            for (int j = 0; j < NUM_BLOCK_COL; j++) {
-                int x = j * Block.WIDTH + Block.WIDTH;
-                int y = i * Block.HEIGHT + Block.HEIGHT;
-                blocks.add(new Block(x, y));
-            }
-        }
-
-        gameloop = new Thread(this);
-        gameloop.start();
+        Thread gameLoop = new Thread(this);
+        gameLoop.start();
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, WIDTH, HEIGHT);
-
+        background.draw(g);
         racket.draw(g);
         ball.draw(g);
-
-        blocks.stream().filter(b -> !b.isDeleted()).forEach(b -> b.draw(g));
+        blocks.draw(g);
     }
 
+    @SneakyThrows
+    @Override
     public void run() {
-        while (true) {
+        while (ball.isContinue(background)) {
             ball.move();
 
-            if (racket.collideWith(ball)) {
-                ball.boundY();
-            }
+            ball.bounceOf(background);
 
-            Optional<Block> collideBlock = blocks.stream().filter(b -> !b.isDeleted()).filter(b -> b.isCollide(ball))
-                    .findFirst();
+            ball.bounceOf(racket);
 
+            // ボールと衝突したブロックを取得し、ブロックを削除する
+            Optional<Block> collideBlock = blocks.getCollideBlock(ball);
             collideBlock.ifPresent(Block::delete);
-            Optional<Direction> direction = collideBlock.map(b -> b.collideWith(ball));
-            if (!direction.isPresent()) {
 
-            }
-
-            // ボールの当たった位置からボールの反射方向を計算
-            else
-                switch (direction.get()) {
-                case UP:
-                case DOWN:
-                    ball.boundY();
-                    break;
-                case LEFT:
-                case RIGHT:
-                    ball.boundX();
-                    break;
-                case UP_LEFT:
-                case UP_RIGHT:
-                case DOWN_LEFT:
-                case DOWN_RIGHT:
-                    ball.boundXY();
-                    break;
-                default:
-                    break;
-                }
+            // ブロックと衝突後、ボールを跳ね返す
+            Optional<Direction> direction = collideBlock.map(b -> b.getDirectionToCollide(ball));
+            direction.ifPresent(d -> ball.bounceTo(d));
 
             repaint();
-            try {
-                // TODO ゲームスピード調整
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            Thread.sleep(20);
         }
     }
 
+    @Override
     public void mouseDragged(MouseEvent e) {
 
     }
 
+    @Override
     public void mouseMoved(MouseEvent e) {
         int x = e.getX();
-        racket.move(x);
+        racket.move(x, WIDTH);
         repaint();
     }
 }

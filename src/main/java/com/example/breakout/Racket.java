@@ -9,31 +9,35 @@ public class Racket {
     public static final int WIDTH = 80;
     public static final int HEIGHT = 5;
 
-    private int centerPos;
+    private Coordinates coordinates;
 
-    public Racket() {
-        centerPos = MainPanel.WIDTH / 2;
+    public Racket(int x, int y) {
+        this.coordinates = new Coordinates(x,y);
     }
 
     public void draw(Graphics g) {
         g.setColor(Color.WHITE);
-        g.fillRect(centerPos - WIDTH / 2, MainPanel.HEIGHT - HEIGHT, WIDTH, HEIGHT);
+        g.fillRect(coordinates.getX(), coordinates.getY(), WIDTH, HEIGHT);
     }
 
-    public void move(int pos) {
-        centerPos = pos;
-
-        if (centerPos < WIDTH / 2) {
-            centerPos = WIDTH / 2;
-        } else if (centerPos > (MainPanel.WIDTH - WIDTH / 2)) {
-            centerPos = MainPanel.WIDTH - WIDTH / 2;
+    public void move(int centerPos, int mainWidth) {
+        // ラケットが左端に到達したら止まる
+        if (mainWidth - WIDTH < centerPos) {
+            coordinates.moveX(mainWidth - WIDTH);
+            return;
         }
+
+        // ラケットが右端に到達したら止まる
+        if (centerPos - WIDTH / 2 < 0) {
+            coordinates.moveX(0);
+            return;
+        }
+
+        coordinates.moveX(centerPos - WIDTH / 2);
     }
 
-    public boolean collideWith(Ball ball) {
-        Rectangle racketRect = new Rectangle(centerPos - WIDTH / 2, MainPanel.HEIGHT - HEIGHT, WIDTH, HEIGHT);
-        Rectangle ballRect = new Rectangle(ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
-
-        return racketRect.intersects(ballRect);
+    public Rectangle getRectangle() {
+        return new Rectangle(coordinates.getX(), coordinates.getY(), WIDTH, HEIGHT);
     }
 }
+
